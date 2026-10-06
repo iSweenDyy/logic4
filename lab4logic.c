@@ -12,6 +12,9 @@ struct Node {
 struct Node* root = NULL;
 
 
+int allow_duplicates = 0;
+
+
 struct Node* CreateTree(struct Node* root, struct Node* r, int data)
 {
     if (r == NULL)
@@ -26,26 +29,27 @@ struct Node* CreateTree(struct Node* root, struct Node* r, int data)
         r->left = NULL;
         r->right = NULL;
         r->data = data;
-        if (root == NULL) return r;          
+        if (root == NULL) return r;              
         if (data < root->data) root->left = r;   
         else root->right = r;                    
         return r;
     }
 
-    
-    if (data == r->data)
+    //Вопрос о необходимости дубликатов
+    if (!allow_duplicates && data == r->data)
     {
         printf("Число %d уже есть в дереве, повторно не добавлено\n", data);
         return root;
     }
 
-    if (data < r->data)                      
+    if (data < r->data)                          
         CreateTree(r, r->left, data);
-    else
+    else                                         
         CreateTree(r, r->right, data);
 
     return root;
 }
+
 
 void print_tree(struct Node* r, int l)
 {
@@ -66,8 +70,8 @@ void print_tree(struct Node* r, int l)
 
 struct Node* search(struct Node* r, int data)
 {
-    if (r == NULL) return NULL;              
-    if (data == r->data) return r;           
+    if (r == NULL) return NULL;
+    if (data == r->data) return r;
     if (data < r->data) return search(r->left, data);
     return search(r->right, data);
 }
@@ -75,10 +79,23 @@ struct Node* search(struct Node* r, int data)
 
 int count_value(struct Node* r, int data)
 {
-    if (r == NULL) return 0;                 
+    if (r == NULL) return 0;
     if (data < r->data) return count_value(r->left, data);
     if (data > r->data) return count_value(r->right, data);
-    return 1;                                
+    return 1 + count_value(r->right, data);
+}
+
+
+void print_levels(struct Node* r, int data, int level)
+{
+    if (r == NULL) return;
+    if (data < r->data) print_levels(r->left, data, level + 1);
+    else if (data > r->data) print_levels(r->right, data, level + 1);
+    else
+    {
+        printf("%d ", level);
+        print_levels(r->right, data, level + 1);
+    }
 }
 
 
@@ -99,7 +116,7 @@ int read_int(const char* prompt)
         printf("%s", prompt);
         if (scanf("%d", &x) == 1) return x;
         printf("Ошибка: нужно ввести целое число\n");
-        while (getchar() != '\n');           
+        while (getchar() != '\n');               
     }
 }
 
@@ -109,14 +126,25 @@ int main()
 
     int D, choice;
 
+    
+    do
+    {
+        allow_duplicates = read_int("Разрешить одинаковые числа в дереве? (1 - да, 0 - нет): ");
+    } while (allow_duplicates != 0 && allow_duplicates != 1);
+
     printf("-1 - окончание построения дерева\n");
     while (1)
     {
         D = read_int("Введите число: ");
-        if (D == -1)
+        if (D == -1)                             
         {
             printf("Построение дерева окончено\n\n");
             break;
+        }
+        if (D < 0)                               
+        {
+            printf("Отр. числа нельзя\n");
+            continue;                            
         }
         root = CreateTree(root, root, D);
     }
@@ -133,8 +161,17 @@ int main()
         if (choice == 1)
         {
             D = read_int("Какое число искать: ");
-            if (search(root, D) != NULL) printf("Число %d найдено в дереве\n", D);
-            else printf("Числа %d в дереве нет\n", D);
+            if (search(root, D) == NULL)
+            {
+                printf("Числа %d в дереве нет\n", D);
+            }
+            else
+            {
+                // cколько раз встречается и на каких уровнях 
+                printf("Число %d встречается %d раз(а), на уровнях: ", D, count_value(root, D));
+                print_levels(root, D, 0);
+                printf("\n");
+            }
         }
         else if (choice == 2)
         {
